@@ -1,0 +1,11 @@
+# Environnements virtuels
+venv/
+.env
+
+# Fichiers temporaires
+__pycache__/
+*.pyc
+*.pyo
+
+# Dépendances (tu n'as besoin que de requirements.txt)
+*.log
