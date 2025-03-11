@@ -2,6 +2,8 @@
 venv/
 .env
 
+node_modules/
+
 # Fichiers temporaires
 __pycache__/
 *.pyc
