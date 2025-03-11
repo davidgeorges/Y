@@ -3,6 +3,7 @@ from flask_cors import CORS
 import numpy as np
 import cv2
 import tensorflow as tf
+import ssl
 
 app = Flask(__name__)
 CORS(app)
@@ -58,4 +59,15 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Create an SSL context for mTLS
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.verify_mode = ssl.CERT_REQUIRED
+    # Load the server certificate and key
+    context.load_cert_chain(
+        certfile="certs/server.crt",
+        keyfile="certs/server.key"
+    )
+    # Load the CA certificate to verify client certificates
+    context.load_verify_locations(cafile="certs/ca.crt")
+    # Start the Flask server with mTLS
+    app.run(host="0.0.0.0", port=5000, ssl_context=context, debug=True)
