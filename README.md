@@ -65,8 +65,8 @@ Cet endpoint reçoit une image, la convertit en niveaux de gris et la redimensio
 
 ```json
 {
-  "confidence": 0.85,
-  "emotion": "Happy"
+  "emotion_counts": {"Anger": 3},
+  "most_common_emotion": "Anger"
 }
 ```
 
@@ -96,8 +96,8 @@ Pour tester l'API avec Postman, suivez ces étapes :
 
     ```json
     {
-    "confidence": 0.85,
-    "emotion": "Happy"
+      "emotion_counts": {"Anger": 3},
+      "most_common_emotion": "Anger"
     }
     ```
 ## Deployment
