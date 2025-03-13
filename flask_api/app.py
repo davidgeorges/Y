@@ -4,14 +4,15 @@ import numpy as np
 import cv2
 import tensorflow as tf
 import ssl
+import collections
 
 app = Flask(__name__)
 CORS(app)
 
-# Load the model once when the app starts
+# Charger le modèle une seule fois
 model = tf.keras.models.load_model('model/model.h5')
 
-# Dictionary mapping indices to emotions
+# Mapping des émotions
 emotion_dict = {
     0: "Anger",
     1: "Disgust",
@@ -24,37 +25,39 @@ emotion_dict = {
 
 def prepare_image(image_bytes):
     np_img = np.frombuffer(image_bytes, np.uint8)
-    # Read as grayscale (1 channel) instead of color (3 channels)
     img = cv2.imdecode(np_img, cv2.IMREAD_GRAYSCALE)
-    # Resize to match the model’s expected input size
     img = cv2.resize(img, (48, 48))
     img = img.astype("float32") / 255.0
-    # Expand dimensions so that it becomes (1, 48, 48, 1)
-    img = np.expand_dims(img, axis=-1)  # adds the channel dimension
-    img = np.expand_dims(img, axis=0)   # adds the batch dimension
+    img = np.expand_dims(img, axis=-1)  # Ajoute la dimension canal
+    img = np.expand_dims(img, axis=0)   # Ajoute la dimension batch
     return img
-
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if 'image' not in request.files:
-        return jsonify({"error": "No image provided"}), 400
+    # Récupérer toutes les images peu importe leur clé
+    files = [file for key, file in request.files.items()]
+    
+    if not files:
+        return jsonify({"error": "No valid images received"}), 400
 
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({"error": "Empty file"}), 400
+    emotion_count = collections.Counter()  # Stocker les émotions détectées
 
     try:
-        img_bytes = file.read()
-        image = prepare_image(img_bytes)
-        # Make a prediction with the model
-        preds = model.predict(image)
-        print(preds)
-        emotion_idx = np.argmax(preds[0])
-        emotion = emotion_dict.get(emotion_idx, "Unknown")
-        confidence = float(preds[0][emotion_idx])
+        for file in files:
+            img_bytes = file.read()
+            image = prepare_image(img_bytes)
+            preds = model.predict(image)
+            emotion_idx = np.argmax(preds[0])
+            emotion = emotion_dict.get(emotion_idx, "Unknown")
+            emotion_count[emotion] += 1
 
-        return jsonify({"confidence": confidence,"emotion": emotion})
+        # Trouver l'émotion la plus présente
+        most_common_emotion = emotion_count.most_common(1)[0][0]
+
+        return jsonify({
+            "most_common_emotion": most_common_emotion,
+            "emotion_counts": dict(emotion_count)
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
